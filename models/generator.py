@@ -268,81 +268,81 @@ def anti_wrapping_function(x):
     return torch.abs(x - torch.round(x / (2 * np.pi)) * 2 * np.pi)
 
 
-# def pesq_score(utts_r, utts_g, h):
+def pesq_score(utts_r, utts_g, h):
 
-#     pesq_score = Parallel(n_jobs=30)(delayed(eval_pesq)(
-#                             utts_r[i].squeeze().cpu().numpy(),
-#                             utts_g[i].squeeze().cpu().numpy(), 
-#                             h.sampling_rate)
-#                           for i in range(len(utts_r)))
-#     pesq_score = np.mean(pesq_score)
+    pesq_score = Parallel(n_jobs=30)(delayed(eval_pesq)(
+                            utts_r[i].squeeze().cpu().numpy(),
+                            utts_g[i].squeeze().cpu().numpy(), 
+                            h.sampling_rate)
+                          for i in range(len(utts_r)))
+    pesq_score = np.mean(pesq_score)
 
-#     return pesq_score
-
-
-# def eval_pesq(clean_utt, esti_utt, sr):
-#     try:
-#         pesq_score = pesq(sr, clean_utt, esti_utt)
-#     except:
-#         # error can happen due to silent period
-#         pesq_score = -1
-
-#     return pesq_score
+    return pesq_score
 
 
-def eval_pesq(clean_utt, esti_utt, sr, idx=None):
-    """
-    Run a single PESQ, returning -1 on error and printing a debug message.
-    """
+def eval_pesq(clean_utt, esti_utt, sr):
     try:
-        score = pesq(sr, clean_utt, esti_utt)
-        return score
-    except Exception as e:
-        if idx is not None:
-            print(f"[eval_pesq] Utterance #{idx}: ERROR → {e}")
-        else:
-            print(f"[eval_pesq] ERROR → {e}")
-        return -1
+        pesq_score = pesq(sr, clean_utt, esti_utt)
+    except:
+        # error can happen due to silent period
+        pesq_score = -1
 
-def pesq_score(utts_r, utts_g, h, n_jobs=None):
-    """
-    Compute PESQ on all utts in parallel, with debug prints.
+    return pesq_score
+
+
+# def eval_pesq(clean_utt, esti_utt, sr, idx=None):
+#     """
+#     Run a single PESQ, returning -1 on error and printing a debug message.
+#     """
+#     try:
+#         score = pesq(sr, clean_utt, esti_utt)
+#         return score
+#     except Exception as e:
+#         if idx is not None:
+#             print(f"[eval_pesq] Utterance #{idx}: ERROR → {e}")
+#         else:
+#             print(f"[eval_pesq] ERROR → {e}")
+#         return -1
+
+# def pesq_score(utts_r, utts_g, h, n_jobs=None):
+#     """
+#     Compute PESQ on all utts in parallel, with debug prints.
     
-    Args:
-        utts_r: list of clean torch tensors
-        utts_g: list of gen   torch tensors
-        h:      config with h.sampling_rate
-        n_jobs: override number of parallel workers
-    Returns:
-        float mean PESQ score
-    """
-    n_utts = len(utts_r)
-    if n_utts == 0:
-        print("[pesq_score] No utterances to score!")
-        return float('nan')
+#     Args:
+#         utts_r: list of clean torch tensors
+#         utts_g: list of gen   torch tensors
+#         h:      config with h.sampling_rate
+#         n_jobs: override number of parallel workers
+#     Returns:
+#         float mean PESQ score
+#     """
+#     n_utts = len(utts_r)
+#     if n_utts == 0:
+#         print("[pesq_score] No utterances to score!")
+#         return float('nan')
 
-    # choose a sensible default if not provided
-    cpu_cnt = os.cpu_count() or 1
-    if n_jobs is None:
-        n_jobs = min(cpu_cnt, n_utts)
-    print(f"[pesq_score] Starting PESQ on {n_utts} utterances with n_jobs={n_jobs}...")
+#     # choose a sensible default if not provided
+#     cpu_cnt = os.cpu_count() or 1
+#     if n_jobs is None:
+#         n_jobs = min(cpu_cnt, n_utts)
+#     print(f"[pesq_score] Starting PESQ on {n_utts} utterances with n_jobs={n_jobs}...")
 
-    batch_start = time.time()
-    def _worker(i):
-        print(f"  → [PESQ] #{i+1}/{n_utts} start")
-        t0 = time.time()
-        clean_np = utts_r[i].squeeze().cpu().numpy()
-        esti_np  = utts_g[i].squeeze().cpu().numpy()
-        score = eval_pesq(clean_np, esti_np, h.sampling_rate, idx=i+1)
-        t1 = time.time()
-        print(f"  ← [PESQ] #{i+1}/{n_utts} done in {t1-t0:.2f}s → score={score:.3f}")
-        return score
+#     batch_start = time.time()
+#     def _worker(i):
+#         print(f"  → [PESQ] #{i+1}/{n_utts} start")
+#         t0 = time.time()
+#         clean_np = utts_r[i].squeeze().cpu().numpy()
+#         esti_np  = utts_g[i].squeeze().cpu().numpy()
+#         score = eval_pesq(clean_np, esti_np, h.sampling_rate, idx=i+1)
+#         t1 = time.time()
+#         print(f"  ← [PESQ] #{i+1}/{n_utts} done in {t1-t0:.2f}s → score={score:.3f}")
+#         return score
 
-    scores = Parallel(n_jobs=n_jobs, backend='loky')(
-        delayed(_worker)(i) for i in range(n_utts)
-    )
+#     scores = Parallel(n_jobs=n_jobs, backend='loky')(
+#         delayed(_worker)(i) for i in range(n_utts)
+#     )
 
-    mean_score   = float(np.mean(scores))
-    batch_time   = time.time() - batch_start
-    print(f"[pesq_score] Finished all {n_utts} in {batch_time:.2f}s → mean PESQ = {mean_score:.3f}")
-    return mean_score
+#     mean_score   = float(np.mean(scores))
+#     batch_time   = time.time() - batch_start
+#     print(f"[pesq_score] Finished all {n_utts} in {batch_time:.2f}s → mean PESQ = {mean_score:.3f}")
+#     return mean_score
