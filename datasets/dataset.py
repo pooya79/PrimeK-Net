@@ -71,8 +71,8 @@ class Val_Dataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         filename = self.audio_indexes[index]
         if self._cache_ref_count == 0:
-            clean_audio, _ = librosa.load(os.path.join(self.clean_wavs_dir, filename + '.wav'), self.sampling_rate)
-            noisy_audio, _ = librosa.load(os.path.join(self.noisy_wavs_dir, filename + '.wav'), self.sampling_rate)
+            clean_audio, _ = librosa.load(os.path.join(self.clean_wavs_dir, filename + '.wav'), sr=self.sampling_rate)
+            noisy_audio, _ = librosa.load(os.path.join(self.noisy_wavs_dir, filename + '.wav'), sr=self.sampling_rate)
             self.cached_clean_wav = clean_audio
             self.cached_noisy_wav = noisy_audio
             self._cache_ref_count = self.n_cache_reuse
@@ -146,8 +146,8 @@ class Dataset(torch.utils.data.Dataset):
     def __getitem__(self, index):
         filename = self.audio_indexes[index]
         if self._cache_ref_count == 0:
-            clean_audio, _ = librosa.load(os.path.join(self.clean_wavs_dir, filename + '.wav'), self.sampling_rate)
-            noisy_audio, _ = librosa.load(os.path.join(self.noisy_wavs_dir, filename + '.wav'), self.sampling_rate)
+            clean_audio, _ = librosa.load(os.path.join(self.clean_wavs_dir, filename + '.wav'), sr=self.sampling_rate)
+            noisy_audio, _ = librosa.load(os.path.join(self.noisy_wavs_dir, filename + '.wav'), sr=self.sampling_rate)
             self.cached_clean_wav = clean_audio
             self.cached_noisy_wav = noisy_audio
             self._cache_ref_count = self.n_cache_reuse
